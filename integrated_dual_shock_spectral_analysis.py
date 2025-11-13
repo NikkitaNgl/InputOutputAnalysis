@@ -774,6 +774,77 @@ class NetworkVisualizer:
         else:
             return fig
 
+    def plot_dual_network_comparison(self, threshold: float = 0.01,
+                                    top_n: int = 30,
+                                    figsize: Tuple[int, int] = (24, 12)):
+        """Side-by-side A and B comparison (NO self-loops)."""
+        A = self.io_system.A
+        B = self.io_system.B
+
+        G_A = self._create_graph_no_selfloops(A, threshold)
+        G_B = self._create_graph_no_selfloops(B, threshold)
+
+        # Filter to top N
+        all_nodes = set(G_A.nodes()) | set(G_B.nodes())
+        if len(all_nodes) > top_n:
+            degree_combined = {}
+            for node in all_nodes:
+                deg_a = G_A.degree(node) if node in G_A else 0
+                deg_b = G_B.degree(node) if node in G_B else 0
+                degree_combined[node] = deg_a + deg_b
+
+            top_nodes = sorted(degree_combined.items(), key=lambda x: x[1], reverse=True)[:top_n]
+            top_node_set = set([n for n, _ in top_nodes])
+
+            G_A = G_A.subgraph(top_node_set & set(G_A.nodes())).copy()
+            G_B = G_B.subgraph(top_node_set & set(G_B.nodes())).copy()
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+
+        # Use union for layout
+        G_union = nx.compose(G_A, G_B)
+        pos = nx.spring_layout(G_union, k=2/np.sqrt(G_union.number_of_nodes()), seed=42)
+
+        # Plot A
+        pos_a = {n: pos[n] for n in G_A.nodes() if n in pos}
+        if G_A.number_of_nodes() > 0:
+            max_degree_a = max(dict(G_A.degree()).values()) if G_A.number_of_edges() > 0 else 1
+            node_sizes_a = [300 + 700 * G_A.degree(n) / max_degree_a for n in G_A.nodes()]
+
+            nx.draw_networkx_nodes(G_A, pos_a, node_size=node_sizes_a, node_color='lightblue',
+                                  alpha=0.8, linewidths=2, edgecolors='black', ax=ax1)
+            nx.draw_networkx_edges(G_A, pos_a, edge_color='gray', alpha=0.5, ax=ax1)
+
+            labels_a = {n: self.sector_labels[n][:10] for n in G_A.nodes()}
+            nx.draw_networkx_labels(G_A, pos_a, labels=labels_a, font_size=7, ax=ax1)
+
+        ax1.set_title(f'Leontief (A) Network\n{G_A.number_of_nodes()} nodes, {G_A.number_of_edges()} edges',
+                     fontsize=12, fontweight='bold')
+        ax1.axis('off')
+
+        # Plot B
+        pos_b = {n: pos[n] for n in G_B.nodes() if n in pos}
+        if G_B.number_of_nodes() > 0:
+            max_degree_b = max(dict(G_B.degree()).values()) if G_B.number_of_edges() > 0 else 1
+            node_sizes_b = [300 + 700 * G_B.degree(n) / max_degree_b for n in G_B.nodes()]
+
+            nx.draw_networkx_nodes(G_B, pos_b, node_size=node_sizes_b, node_color='lightcoral',
+                                  alpha=0.8, linewidths=2, edgecolors='black', ax=ax2)
+            nx.draw_networkx_edges(G_B, pos_b, edge_color='gray', alpha=0.5, ax=ax2)
+
+            labels_b = {n: self.sector_labels[n][:10] for n in G_B.nodes()}
+            nx.draw_networkx_labels(G_B, pos_b, labels=labels_b, font_size=7, ax=ax2)
+
+        ax2.set_title(f'Ghosh (B) Network\n{G_B.number_of_nodes()} nodes, {G_B.number_of_edges()} edges',
+                     fontsize=12, fontweight='bold')
+        ax2.axis('off')
+
+        fig.suptitle('Network Comparison: A vs B (NO Self-Loops)',
+                    fontsize=16, fontweight='bold', y=0.98)
+
+        plt.tight_layout()
+        return fig
+
 
 # ============================================================================
 # SECTION 6: VISUALIZATION FUNCTIONS
@@ -1129,7 +1200,63 @@ def plot_contagion_analysis(temporal_analyzer, crisis_period, normal_period, sav
 
 
 # ============================================================================
-# SECTION 7: DATA LOADING
+# SECTION 7: COVID SHOCK SIMULATION
+# ============================================================================
+
+def simulate_covid_shock(io_system: IOSystem, sector_labels: List[str]) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Simulate stylized COVID-19 shock to specific sectors.
+
+    Assumes demand shocks to:
+    - Accommodation and food services (NACE I): -40%
+    - Transportation (NACE H): -50%
+    - Wholesale and retail (NACE G): -20%
+    - Arts, entertainment (NACE R): -50%
+
+    Returns:
+        (delta_d, delta_v) shock vectors
+    """
+    logger.info("Simulating COVID-19 shock scenario...")
+
+    delta_d = np.zeros(io_system.n)
+    delta_v = np.zeros(io_system.n)
+
+    # Identify affected sectors (NACE codes in labels)
+    affected_sectors = []
+    shock_magnitudes = []
+
+    for i, label in enumerate(sector_labels):
+        label_lower = label.lower()
+
+        # Accommodation and food service (I)
+        if '_i_' in label_lower or 'accommodation' in label_lower or 'food service' in label_lower:
+            delta_d[i] = -0.4 * io_system.d[i]
+            affected_sectors.append(label)
+            shock_magnitudes.append(-0.4)
+        # Transportation (H)
+        elif '_h_' in label_lower or 'transport' in label_lower or 'warehousing' in label_lower:
+            delta_d[i] = -0.5 * io_system.d[i]
+            affected_sectors.append(label)
+            shock_magnitudes.append(-0.5)
+        # Wholesale and retail (G)
+        elif '_g_' in label_lower or 'retail' in label_lower or 'wholesale' in label_lower:
+            delta_d[i] = -0.2 * io_system.d[i]
+            affected_sectors.append(label)
+            shock_magnitudes.append(-0.2)
+        # Arts, entertainment, recreation (R)
+        elif '_r_' in label_lower or 'arts' in label_lower or 'entertainment' in label_lower:
+            delta_d[i] = -0.5 * io_system.d[i]
+            affected_sectors.append(label)
+            shock_magnitudes.append(-0.5)
+
+    logger.info(f"  Affected sectors: {len(affected_sectors)}")
+    logger.info(f"  Total demand shock: {delta_d.sum():.2e}")
+
+    return delta_d, delta_v
+
+
+# ============================================================================
+# SECTION 8: DATA LOADING
 # ============================================================================
 
 def load_figaro_data(year: int) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
@@ -1269,6 +1396,70 @@ def analyze_single_year(year: int):
     )
     logger.info("  ✓ plot_8_sensitivity_analysis.png")
 
+    # NETWORK VISUALIZATIONS
+    logger.info("\nGenerating network visualizations...")
+
+    try:
+        network_viz = NetworkVisualizer(io_system, sector_labels)
+
+        # Plot 11: Network graph (A matrix)
+        logger.info("  Creating network graph (A matrix)...")
+        network_viz.plot_network_graph(
+            matrix_type='A',
+            threshold=0.015,
+            top_n=50,
+            save_path=year_figures_dir / 'plot_11_network_graph.png'
+        )
+        logger.info("    ✓ plot_11_network_graph.png")
+
+        # Plot 12: Dual network comparison
+        logger.info("  Creating dual network comparison (A vs B)...")
+        fig_dual = network_viz.plot_dual_network_comparison(
+            threshold=0.015,
+            top_n=30,
+            figsize=(24, 12)
+        )
+        plt.savefig(year_figures_dir / 'plot_12_dual_network_comparison.png',
+                   dpi=300, bbox_inches='tight')
+        plt.close()
+        logger.info("    ✓ plot_12_dual_network_comparison.png")
+
+    except Exception as e:
+        logger.warning(f"  ⚠ Network visualizations failed: {e}")
+
+    # COVID SHOCK ANALYSIS
+    logger.info("\nRunning COVID-19 shock scenario...")
+
+    try:
+        delta_d_covid, delta_v_covid = simulate_covid_shock(io_system, sector_labels)
+
+        covid_results = propagator.propagate_dual_shock(
+            delta_d_covid,
+            delta_v_covid,
+            alpha=0.6,
+            beta=0.4
+        )
+
+        logger.info(f"  COVID shock total impact: {covid_results['total_change']:,.2f}")
+        logger.info(f"  Max impact sector: {sector_labels[covid_results['max_impact_sector']]}")
+
+        # Add COVID results to sensitivity results
+        sensitivity_results['covid_pandemic'] = {
+            'name': 'COVID-19 Pandemic (Actual Pattern)',
+            'description': 'Targeted shocks to accommodation, transport, retail, arts',
+            'total_change': covid_results['total_change'],
+            'demand_contribution': covid_results['demand_contribution'],
+            'supply_contribution': covid_results['supply_contribution'],
+            'max_impact_sector': sector_labels[covid_results['max_impact_sector']],
+            'max_impact_value': covid_results['max_impact_value'],
+            'delta_x': covid_results['delta_x_total']
+        }
+
+        logger.info("  ✓ COVID scenario added to sensitivity analysis")
+
+    except Exception as e:
+        logger.warning(f"  ⚠ COVID shock analysis failed: {e}")
+
     # CSV OUTPUTS
     logger.info("\nGenerating CSV files...")
 
@@ -1303,6 +1494,12 @@ def analyze_single_year(year: int):
     ])
     sensitivity_df.to_csv(year_results_dir / 'figaro_sensitivity_analysis.csv', index=False)
     logger.info("  ✓ figaro_sensitivity_analysis.csv")
+
+    # top_20_sectors_impact.csv
+    top_20_df = results_df.head(20)[['Sector', 'Total_Impact', 'Demand_Impact',
+                                      'Supply_Impact', 'Impact_Percent']]
+    top_20_df.to_csv(year_results_dir / 'top_20_sectors_impact.csv', index=False)
+    logger.info("  ✓ top_20_sectors_impact.csv")
 
     # Save matrices
     np.save(year_results_dir / 'matrix_A_leontief.npy', io_system.A)
