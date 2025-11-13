@@ -52,13 +52,13 @@ Place these files in the same directory as the script.
 
 **Directory structure:**
 ```
-results/{year}/
+dual_results/{year}/
   - figaro_shock_analysis_results.csv
   - figaro_sensitivity_analysis.csv
   - matrix_A_leontief.npy
   - matrix_B_ghosh.npy
 
-figures/{year}/
+dual_figures/{year}/
   - plot_1_spectral_comparison.png
   - plot_2_sector_impact.png
   - plot_7_rmt_analysis.png
@@ -67,14 +67,14 @@ figures/{year}/
 
 ### Temporal Analysis (All Years):
 
-**Directory: results/**
+**Directory: dual_results/**
 ```
 - temporal_systemic_risk_indicators.csv
 - kolmogorov_smirnov_tests.csv
 - financial_contagion_analysis.csv
 ```
 
-**Directory: figures/**
+**Directory: dual_figures/**
 ```
 - plot_9_temporal_rmt_analysis.png
 - plot_10_contagion_analysis.png
@@ -100,14 +100,14 @@ Edit the `CONFIG` dictionary at the top of the script:
 
 ```python
 CONFIG = {
-    'years': list(range(2010, 2023)),      # Years to analyze
-    'data_dir': Path('.'),                  # Data directory
-    'results_dir': Path('./results'),       # Results output
-    'figures_dir': Path('./figures'),       # Figures output
-    'top_k_sectors': 50,                    # Top sectors for viz
-    'rmt_variance': 1.0,                    # RMT variance parameter
-    'dual_shock_alpha': 0.6,                # Demand weight
-    'dual_shock_beta': 0.4,                 # Supply weight
+    'years': list(range(2010, 2023)),           # Years to analyze
+    'data_dir': Path('.'),                      # Data directory
+    'dual_results_dir': Path('./dual_results'), # Results output
+    'dual_figures_dir': Path('./dual_figures'), # Figures output
+    'top_k_sectors': 50,                        # Top sectors for viz
+    'rmt_variance': 1.0,                        # RMT variance parameter
+    'dual_shock_alpha': 0.6,                    # Demand weight
+    'dual_shock_beta': 0.4,                     # Supply weight
 }
 ```
 

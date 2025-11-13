@@ -314,7 +314,7 @@ InputOutputAnalysis/
 ├── final_demand_only_matrix_YYYY.csv
 ├── value_added_only_matrix_YYYY.csv
 │
-├── results/                                    # CSV outputs
+├── dual_results/                               # CSV outputs
 │   ├── YYYY/
 │   │   ├── figaro_shock_analysis_results.csv
 │   │   ├── figaro_sensitivity_analysis.csv
@@ -324,7 +324,7 @@ InputOutputAnalysis/
 │   ├── kolmogorov_smirnov_tests.csv
 │   └── financial_contagion_analysis.csv
 │
-└── figures/                                    # Visualizations
+└── dual_figures/                               # Visualizations
     ├── YYYY/
     │   ├── plot_1_spectral_comparison.png
     │   ├── plot_2_sector_impact.png
@@ -359,7 +359,7 @@ networkx>=2.6.0      # Network analysis
    python integrated_dual_shock_spectral_analysis.py
    ```
 
-4. **Explore results** in `results/` and `figures/` directories
+4. **Explore results** in `dual_results/` and `dual_figures/` directories
 
 5. **Customize** CONFIG parameters for specific needs
 

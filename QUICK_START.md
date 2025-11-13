@@ -38,35 +38,35 @@ python integrated_dual_shock_spectral_analysis.py
 
 ## 5. Check Outputs
 
-### Per-year results (in `results/YYYY/`):
+### Per-year results (in `dual_results/YYYY/`):
 
 ```bash
-ls results/2010/
+ls dual_results/2010/
 # figaro_shock_analysis_results.csv
 # figaro_sensitivity_analysis.csv
 # matrix_A_leontief.npy
 # matrix_B_ghosh.npy
 ```
 
-### Per-year figures (in `figures/YYYY/`):
+### Per-year figures (in `dual_figures/YYYY/`):
 
 ```bash
-ls figures/2010/
+ls dual_figures/2010/
 # plot_1_spectral_comparison.png
 # plot_2_sector_impact.png
 # plot_7_rmt_analysis.png
 # plot_8_sensitivity_analysis.png
 ```
 
-### Temporal analysis (in `results/` and `figures/`):
+### Temporal analysis (in `dual_results/` and `dual_figures/`):
 
 ```bash
-ls results/
+ls dual_results/
 # temporal_systemic_risk_indicators.csv
 # kolmogorov_smirnov_tests.csv
 # financial_contagion_analysis.csv
 
-ls figures/
+ls dual_figures/
 # plot_9_temporal_rmt_analysis.png
 # plot_10_contagion_analysis.png
 ```
@@ -105,11 +105,13 @@ Edit `CONFIG` dictionary in the script:
 
 ```python
 CONFIG = {
-    'years': list(range(2010, 2023)),      # Change years
-    'dual_shock_alpha': 0.6,                # Demand weight
-    'dual_shock_beta': 0.4,                 # Supply weight
-    'top_k_sectors': 50,                    # Number of top sectors
-    'rmt_variance': 1.0,                    # RMT parameter
+    'years': list(range(2010, 2023)),           # Change years
+    'dual_results_dir': Path('./dual_results'), # Results directory
+    'dual_figures_dir': Path('./dual_figures'), # Figures directory
+    'dual_shock_alpha': 0.6,                    # Demand weight
+    'dual_shock_beta': 0.4,                     # Supply weight
+    'top_k_sectors': 50,                        # Number of top sectors
+    'rmt_variance': 1.0,                        # RMT parameter
 }
 ```
 
@@ -163,14 +165,14 @@ python verify_integration.py
 python integrated_dual_shock_spectral_analysis.py
 
 # 3. Check specific year
-cat results/2020/figaro_shock_analysis_results.csv | head -20
+cat dual_results/2020/figaro_shock_analysis_results.csv | head -20
 
 # 4. View temporal trends
 python -c "
 import pandas as pd
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('results/temporal_systemic_risk_indicators.csv')
+df = pd.read_csv('dual_results/temporal_systemic_risk_indicators.csv')
 plt.plot(df['Period'], df['Turbulence_Index'])
 plt.title('Turbulence Over Time')
 plt.xlabel('Year')
@@ -182,7 +184,7 @@ plt.savefig('turbulence_trend.png')
 python -c "
 import pandas as pd
 
-df = pd.read_csv('results/2020/figaro_sensitivity_analysis.csv')
+df = pd.read_csv('dual_results/2020/figaro_sensitivity_analysis.csv')
 print(df.sort_values('Total_Change', ascending=False))
 "
 ```

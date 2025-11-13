@@ -87,8 +87,8 @@ COND_THRESHOLD_PINV = 1e10
 CONFIG = {
     'years': list(range(2010, 2023)),
     'data_dir': Path('.'),
-    'results_dir': Path('./results'),
-    'figures_dir': Path('./figures'),
+    'dual_results_dir': Path('./dual_results'),
+    'dual_figures_dir': Path('./dual_figures'),
     'top_k_sectors': 50,
     'pagerank_damping_prob': 0.15,
     'rmt_variance': 1.0,
@@ -98,8 +98,8 @@ CONFIG = {
 }
 
 # Create output directories
-CONFIG['results_dir'].mkdir(exist_ok=True)
-CONFIG['figures_dir'].mkdir(exist_ok=True)
+CONFIG['dual_results_dir'].mkdir(exist_ok=True)
+CONFIG['dual_figures_dir'].mkdir(exist_ok=True)
 
 # Color scheme
 COLORS = {
@@ -1180,8 +1180,8 @@ def analyze_single_year(year: int):
     logger.info(f"{'='*80}\n")
 
     # Create year-specific directories
-    year_results_dir = CONFIG['results_dir'] / str(year)
-    year_figures_dir = CONFIG['figures_dir'] / str(year)
+    year_results_dir = CONFIG['dual_results_dir'] / str(year)
+    year_figures_dir = CONFIG['dual_figures_dir'] / str(year)
     year_results_dir.mkdir(exist_ok=True)
     year_figures_dir.mkdir(exist_ok=True)
 
@@ -1359,7 +1359,7 @@ def run_temporal_analysis(all_years_data):
         logger.info(f"  {period}: KS={ks['ks_statistic']:.4f}, p={ks['p_value']:.4f}")
 
     ks_df = pd.DataFrame(ks_results)
-    ks_df.to_csv(CONFIG['results_dir'] / 'kolmogorov_smirnov_tests.csv', index=False)
+    ks_df.to_csv(CONFIG['dual_results_dir'] / 'kolmogorov_smirnov_tests.csv', index=False)
     logger.info("  ✓ kolmogorov_smirnov_tests.csv")
 
     # Systemic risk indicators
@@ -1377,13 +1377,13 @@ def run_temporal_analysis(all_years_data):
         })
 
     risk_df = pd.DataFrame(risk_results)
-    risk_df.to_csv(CONFIG['results_dir'] / 'temporal_systemic_risk_indicators.csv', index=False)
+    risk_df.to_csv(CONFIG['dual_results_dir'] / 'temporal_systemic_risk_indicators.csv', index=False)
     logger.info("  ✓ temporal_systemic_risk_indicators.csv")
 
     # Plot 9: Temporal RMT evolution
     plot_temporal_rmt_analysis(
         temporal_analyzer,
-        CONFIG['figures_dir'] / 'plot_9_temporal_rmt_analysis.png'
+        CONFIG['dual_figures_dir'] / 'plot_9_temporal_rmt_analysis.png'
     )
     logger.info("  ✓ plot_9_temporal_rmt_analysis.png")
 
@@ -1408,13 +1408,13 @@ def run_temporal_analysis(all_years_data):
         'Absorption_Ratio_Change_Pct': contagion['absorption_ratio_change_pct'],
         'Entropy_Change_Pct': contagion['entropy_change_pct']
     }])
-    contagion_df.to_csv(CONFIG['results_dir'] / 'financial_contagion_analysis.csv', index=False)
+    contagion_df.to_csv(CONFIG['dual_results_dir'] / 'financial_contagion_analysis.csv', index=False)
     logger.info("  ✓ financial_contagion_analysis.csv")
 
     # Plot 10: Contagion analysis
     plot_contagion_analysis(
         temporal_analyzer, crisis_period, normal_period,
-        CONFIG['figures_dir'] / 'plot_10_contagion_analysis.png'
+        CONFIG['dual_figures_dir'] / 'plot_10_contagion_analysis.png'
     )
     logger.info("  ✓ plot_10_contagion_analysis.png")
 
@@ -1451,8 +1451,8 @@ def main():
     logger.info(f"{'='*80}")
     logger.info(f"\nProcessed {len(all_years_data)} years successfully")
     logger.info(f"\nAll outputs saved to:")
-    logger.info(f"  Results: {CONFIG['results_dir']}")
-    logger.info(f"  Figures: {CONFIG['figures_dir']}")
+    logger.info(f"  Results: {CONFIG['dual_results_dir']}")
+    logger.info(f"  Figures: {CONFIG['dual_figures_dir']}")
     logger.info(f"\n{'='*80}\n")
 
 
